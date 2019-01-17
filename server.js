@@ -60,7 +60,7 @@ app.get('/getidvalidity', function(req, res){
 	}else{
 		var user_id = parsedQuery.id;
 		
-		var Id = mongoose.model('Schema', new Schema({id : String, pswd : String, name : String}), 'client');
+		var Id = mongoose.model('Schema', new Schema({id : String, pssword : String, name : String, phone : String}), 'client');
 		var condition = {'id' : user_id};
 		var get = {'_id' : 0, 'id' : 1};
 		
@@ -91,8 +91,9 @@ app.get('/getidvalidity', function(req, res){
  *        which requests to save members' info.
  *        Parameter : None(Must be).
  *        Request body : id (String) - User ID entered by user.
- *                       pswd (String) - User Password entered by user.
+ *                       password (String) - User Password entered by user.
  *                       name (String) - User name.
+ *                       phone (String) - User phone number.
  *        Response : None.
  */
 app.post('/postmember', function(req, res){
@@ -107,10 +108,11 @@ app.post('/postmember', function(req, res){
 		res.end();
 	}else{
 		var user_id = req.body.id;
-		var pswd = req.body.pswd;
+		var password = req.body.password;
 		var name = req.body.name;
+		var phone = req.body.phone;
 		
-		var Client = mongoose.model('Schema', new Schema({id : String, pswd : String, name : String}), 'client');
+		var Client = mongoose.model('Schema', new Schema({id : String, password : String, name : String, phone : String}), 'client');
 		var newInfo = ({'id' : user_id, 'pswd' : pswd, 'name' : name});
 		
 		// If users do not check their id validity or do ignore the invalidity,
@@ -152,5 +154,29 @@ app.get('/getcouponinfo', function(req, res){
 		res.end();
 	}else{
 		var user_id = parsedQuery.id;
-		var 
+		
+		var Coupon = mongoose.model('Schema', new Schema({store : String, id : String, num_coupon : String}), 'coupon');
+		var condition = {"id" : user_id};
+		var get = {"_id" : 0, "store" : 1, "num_coupon" : 1};
+		
+		Coupon.find(condition, get, function(error, data){
+			if (error){
+				console.log(error);
+			}else{
+				// User has no coupon at all.
+				// Creating entity routine is in POST.
+				if (data.toString() == ''){
+					data = [];
+					res.setHeader('Content-Type', 'text/json');
+					res.write(data.toString());
+					res.end();
+				}else{
+					res.setHeader('Content-Type', 'text/json');
+					res.write(data.toString());
+					res.end();
+				}
+			}
+		});
+		mongoose.deleteModel('Schema');
+	}
 });
