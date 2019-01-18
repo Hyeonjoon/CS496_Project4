@@ -55,7 +55,7 @@ app.get('/getidvalidity', function(req, res){
 	
 	// Need only one parameter which is user identifier.
 	if (Object.keys(parsedQuery).length != 1){
-		res.write('Error: Too many or less number of parameters.');
+		res.write(' Error: Too many or less number of parameters.');
 		res.end();
 	}else{
 		var id = parsedQuery.id;
@@ -72,12 +72,12 @@ app.get('/getidvalidity', function(req, res){
 				// If there's overlapping, send '0' as a response.
 				if (data.toString() != ''){
 					res.setHeader('Content-Type', 'text/plain');
-					res.write('0');
+					res.write(' 0');
 					res.end();
 				// If there's no overlapping, send '1' as a response.
 				}else{
 					res.setHeader('Content-Type', 'text/plain');
-					res.write('1');
+					res.write(' 1');
 					res.end();
 				}
 			}
@@ -104,7 +104,7 @@ app.post('/postmember', function(req, res){
 	
 	// Need no parameter.
 	if (Object.keys(parsedQuery).length != 0){
-		res.write('Error: There should be no parameter.');
+		res.write(' Error: There should be no parameter.');
 		res.end();
 	}else{
 		var id = req.body.id;
@@ -148,7 +148,7 @@ app.post('/postlogin', function(req, res){
 	
 	// Need no parameter.
 	if (Object.keys(parsedQuery).length != 0){
-		res.wrtie('Error: There should be no parameter.');
+		res.wrtie(' Error: There should be no parameter.');
 		res.end();
 	}else{
 		var id = req.body.id;
@@ -168,7 +168,7 @@ app.post('/postlogin', function(req, res){
 				// There's no match.
 				if (data1.toString() == ''){
 					res.setHeader('Content-Type', 'text/plain');
-					res.write('-1');
+					res.write(' -1');
 					res.end();
 				// There's ID match.
 				}else{
@@ -179,12 +179,12 @@ app.post('/postlogin', function(req, res){
 							// There's no ID - password match.
 							if (data2.toString() == ''){
 								res.setHeader('Content-Type', 'text/plain');
-								res.write('0');
+								res.write(' 0');
 								res.end();
 							// Login success.
 							}else{
 								res.setHeader('Content-Type', 'text/plain');
-								res.write('1');
+								res.write(' 1');
 								res.end();
 							}
 						}
@@ -219,7 +219,7 @@ app.get('/getcouponinfo', function(req, res){
 	
 	// Need only one parameters.
 	if (Object.keys(parsedQuery).length != 1){
-		res.write('Error: Too many or less number of parameters.');
+		res.write(' Error: Too many or less number of parameters.');
 		res.end();
 	}else{
 		var id = parsedQuery.id;
@@ -237,11 +237,11 @@ app.get('/getcouponinfo', function(req, res){
 				if (data.toString() == ''){
 					data = [];
 					res.setHeader('Content-Type', 'text/json');
-					res.write(data.toString());
+					res.write(' ' + data.toString());
 					res.end();
 				}else{
 					res.setHeader('Content-Type', 'text/json');
-					res.write(data.toString());
+					res.write(' ' + data.toString());
 					res.end();
 				}
 			}
@@ -269,7 +269,7 @@ app.post('/postcouponinfo', function(req, res){
 	
 	// Need no parameter.
 	if (Object.keys(parsedQuery).length != 0){
-		res.write('Error: There should be no parameter.');
+		res.write(' Error: There should be no parameter.');
 		res.end();
 	}else{
 		var store = req.body.store;
@@ -304,7 +304,7 @@ app.post('/postcouponinfo', function(req, res){
 								console.log(error);
 							}else{
 								res.setHeader('Content-Type', 'text/json');
-								res.write(doc.toString());
+								res.write(' ' + doc.toString());
 								res.end();
 							}
 						});
@@ -321,13 +321,13 @@ app.post('/postcouponinfo', function(req, res){
 							console.log(error);
 						}else{
 							res.setHeader('Content-Type', 'text/json');
-							res.write(doc.toString());
+							res.write(' ' + doc.toString());
 							res.end();
 						}
 					});
 				// Wrong code.
 				}else{
-					res.write('Error: Wrong code.');
+					res.write(' Error: Wrong code.');
 					res.end();
 				}
 			}
