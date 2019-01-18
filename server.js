@@ -335,3 +335,7 @@ app.post('/postcouponinfo', function(req, res){
 		mongoose.deleteModel('Schema');
 	}
 });
+
+/**********************************
+ * End of coupon handling routines.
+ **********************************/
