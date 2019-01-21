@@ -333,18 +333,47 @@ app.get('/getcouponinfo', function(req, res){
 					res.write(' ' + data.toString());
 					res.end();
 				}else{
-					//res.setHeader('Content-Type', 'text/json');
-					//res.write(' ' + data.toString());
-					//res.end();
+					mongoose.deleteModel('Schema');
+					
+					// Get data2: color - logo pairs.
 					data1 = data;
+					data2 = [];
+					
+					var Store = mongoose.model('Schema', new Schema({storename : String, color : String, logo : String}), 'store');
+										
+					data1.forEach(function(e){
+						condition = {'storename' : e.store};
+						get = {'_id' : 0, 'storename' : 0, '__v' : 0};
+						
+						Store.find(condition, get, function(error, doc){
+							if (error){
+								console.log(error);
+							}else{
+								var new_data1 = {};
+								var new_data2 = {};
+								
+								for (var k1 in e){
+									new_data1[k1] = e[k1];
+								}
+								for (var k2 in doc[0]){
+									new_data2[k2] = doc[0][k2];
+								}
+								
+								var new_data = Object.assign(new_data1.toObject(), new_data2.toObject());
+								data2.push(new_data);
+								
+								if (data2.length == data1.length){
+									res.setHeader('Content-Type', 'text/json');
+									res.write(JSON.stringify(data2));
+									res.end();
+								}
+							}
+						});
+					});
+					mongoose.deleteModel('Schema');
 				}
 			}
 		});
-		mongoose.deleteModel('Schema');
-		
-		// Get data2: color - logo pairs.
-		
-		
 	}
 });
 
