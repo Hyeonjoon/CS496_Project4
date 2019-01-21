@@ -8,12 +8,15 @@ var http = require('http');
 var url = require('url');
 var querystring = require('querystring');
 
-// Use express.
+// Use express, body-parser.
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.json({limit : '50mb'}));
 app.use(bodyParser.urlencoded({limit : '50mb', extended : true}));
+
+// Use crypto to encode user passwords.
+const crypto = require('crypto');
 
 // Connect this node.js server with MongoDB.
 var mongoose = require('mongoose');
@@ -95,6 +98,7 @@ app.get('/getidvalidity', function(req, res){
  *                       name (String) - User name.
  *                       phone (String) - User phone number.
  *        Response : None.
+ *        Use crypto to encode user password.
  */
 app.post('/postmember', function(req, res){
 	console.log('Post member information.');
@@ -112,8 +116,11 @@ app.post('/postmember', function(req, res){
 		var name = req.body.name;
 		var phone = req.body.phone;
 		
-		var Client = mongoose.model('Schema', new Schema({id : String, password : String, name : String, phone : String}), 'client');
-		var newInfo = ({'id' : id, 'password' : password, 'name' : name});
+		// Encode user password.
+		password = crypto.createHash('sha512').update(password).digest('base64');
+		
+		var Client = mongoose.model('Schema', new Schema({id : String, password : String, name : String, phone : String, store : String}), 'client');
+		var newInfo = {'id' : id, 'password' : password, 'name' : name};
 		
 		// If users do not check their id validity or do ignore the invalidity,
 		// it is filterd at the application side.
@@ -139,6 +146,7 @@ app.post('/postmember', function(req, res){
  *        Response : '-1'/'0'/'1' (String) - '-1' if there's no such ID,
  *                                           '0' if login fails because of password missmatch, and
  *                                           '1' if login successes.
+ *        Encode password using crypto and compare with encoded password saved in DB.
  */
 app.post('/postlogin', function(req, res){
 	console.log('Post login information.');
@@ -154,10 +162,13 @@ app.post('/postlogin', function(req, res){
 		var id = req.body.id;
 		var password = req.body.password;
 		
-		var Client = mongoose.model('Schema', new Schema({id : String, password : String, name : String, phone : String}), 'client');
+		// Encode user password.
+		password = crypto.createHash('sha512').update(password).digest('base64');
+		
+		var Client = mongoose.model('Schema', new Schema({id : String, password : String, name : String, phone : String, store : String}), 'client');
 		var condition1 = {'id' : id};
 		var condition2 = {'id' : id, 'password' : password};
-		var get = {'_id' : 0, 'name' : 1};
+		var get = {'_id' : 0, 'password' : 0, '__v' : 0};
 		
 		// Check if there exists ID match.
 		Client.find(condition1, get, function(error, data1){
@@ -184,7 +195,7 @@ app.post('/postlogin', function(req, res){
 							// Login success.
 							}else{
 								res.setHeader('Content-Type', 'text/plain');
-								res.write(' 1');
+								res.write(' ' + data2);
 								res.end();
 							}
 						}
@@ -196,6 +207,84 @@ app.post('/postlogin', function(req, res){
 	}
 });
 
+/*
+ * GET - Deals with GET method,
+ *       which requests store info.
+ *       Parameters : name (String) - Store identifier.
+ *       Response : Pair of 'color' and 'logo'.
+ *                  (logo is encoded image content.)
+ */
+app.get('/getstoreinfo', function(req, res){
+	console.log('Get store information.');
+	// Parse parameters.
+	var parsedUrl = url.parse(req.url);
+	var parsedQuery = querystring.parse(parsedUrl.query, '&', '=');
+	
+	// Need only one parameter which is store identifier.
+	if (Object.keys(parsedQuery).length != 1){
+		res.write('Error: Too many or less number of parameters.');
+		res.end();
+	}else{
+		var storename = parsedQuery.storename;
+		
+		var Store = mongoose.model('Schema', new Schema({storename : String, color : String, logo : String}), 'store');
+		var condition = {'storename' : storename};
+		var get = {'_id' : 0, 'storename' : 0};
+		
+		Store.find(condition, get, function(error, data){
+			if (error){
+				console.log(error);
+			}else{
+				res.setHeader('Content-Type', 'text/json');
+				res.write(' ' + data.toString());
+				res.end();
+			}
+		});
+		mongoose.deleteModel('Schema');	
+	}
+});
+
+/*
+ * POST - Deals with POST method,
+ *        which requests to change theme color and logo.
+ *        Parameters : None(Must be).
+ *        Request body : storename (String) - Store name.
+ *                       color (String) - Theme color for coupon.
+ *                       logo (String) - Encoded content of logo image.
+ *        Response : None.
+ */
+app.post('/poststoreinfo', function(req, res){
+	console.log('Post store information.');
+	// Parse parameters.
+	var parsedUrl = url.parse(req.url);
+	var parsedQuery = querystring.parse(parsedUrl.query, '&', '=');
+	
+	// Need no parameter.
+	if (Object.keys(parsedQuery).length != 0){
+		res.write('Error: There should be no parameter.');
+		res.end();
+	}else{
+		var storename = req.body.storename;
+		var color = req.body.color;
+		var logo = req.body.logo;
+		
+		var Store = mongoose.model('Schema', new Schema({storename : String, color : String, logo : String}), 'store');
+		var condition = {'storename' : storename};
+		var update = {'$set' : {'color' : color, 'logo' : logo}};
+		var option = {upsert : true, new : true, useFindAndModify : false};
+		
+		Store.findOneAndUpdate(condition, update, option, function(error, data){
+			if (error){
+				console.log(error);
+			}else{
+				res.setHeader('Content-Type', 'text/json');
+				res.write(' ' + data.toString());
+				res.end();
+			}
+		});
+		mongoose.deleteModel('Schema');
+	}
+});
 
 /**************************************
  * End of membership handling routines.
@@ -209,7 +298,7 @@ app.post('/postlogin', function(req, res){
  * GET - Deals with GET method,
  *       which requests coupon info.
  *       Parameters : id (String) - User identifer.
- *       Response : Pairs of store name and number of coupons.
+ *       Response : Pairs of store name, number of coupons, theme color, and logo of that store.
  */
 app.get('/getcouponinfo', function(req, res){
 	console.log('Get coupon information.');
@@ -222,12 +311,16 @@ app.get('/getcouponinfo', function(req, res){
 		res.write(' Error: Too many or less number of parameters.');
 		res.end();
 	}else{
+		var data1;
+		var data2;
+		
 		var id = parsedQuery.id;
 		
 		var Coupon = mongoose.model('Schema', new Schema({store : String, id : String, num_coupon : String}), 'coupon');
 		var condition = {"id" : id};
 		var get = {"_id" : 0, "store" : 1, "num_coupon" : 1};
 		
+		// Get data1: store - num_coupon pairs.
 		Coupon.find(condition, get, function(error, data){
 			if (error){
 				console.log(error);
@@ -235,18 +328,23 @@ app.get('/getcouponinfo', function(req, res){
 				// User has no coupon at all.
 				// Creating entity routine is in POST.
 				if (data.toString() == ''){
-					data = [];
+					var data = [];
 					res.setHeader('Content-Type', 'text/json');
 					res.write(' ' + data.toString());
 					res.end();
 				}else{
-					res.setHeader('Content-Type', 'text/json');
-					res.write(' ' + data.toString());
-					res.end();
+					//res.setHeader('Content-Type', 'text/json');
+					//res.write(' ' + data.toString());
+					//res.end();
+					data1 = data;
 				}
 			}
 		});
 		mongoose.deleteModel('Schema');
+		
+		// Get data2: color - logo pairs.
+		
+		
 	}
 });
 
